@@ -5,20 +5,27 @@ from django.conf import settings
 
 def home(request):
     context = {}
-    api_key = settings.GOOGLE_API_KEY
-    sb = safebrowsing.LookupAPI(api_key)
-    resp = sb.threat_matches_find('')
-    if resp:
-        matches = resp.get('matches', '')
-        if matches:
-            context['result'] = 'Threat Found'
-        error = resp.get('error', '')
-        if error:
-            context['result'] = 'ERROR'
+    if request.method == "POST":
+        # import pdb
+        # pdb.set_trace()
+        vendor = request.POST.get('vendor', '')
+        url = request.POST.get('url', '')
+        if vendor == "google":
+            api_key = settings.GOOGLE_API_KEY
+            sb = safebrowsing.LookupAPI(api_key)
+            resp = sb.threat_matches_find(url)
 
-        context['details'] = resp
-    else:
-        context['result'] = 'Threat Not Found'
-        context['details'] = 'Try a different URL'
+            if resp:
+                if resp.get('matches', ''):
+                    context['result'] = 'unsafe'
+                if resp.get('error', ''):
+                    context['result'] = 'error'
+
+                context['details'] = resp
+            else:
+                context['result'] = 'safe'
+                context['details'] = 'Try a different URL'
+        if vendor == "norton":
+            context['result'] = 'Work in Progress'
 
     return render(request, 'home.html', context)
